@@ -93,7 +93,7 @@ function linkmarklet_post()
         * { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
         body {
             background:#fff;
-            font:12px Helvetica, Arial, sans-serif;
+            font:13px Helvetica, Arial, sans-serif;
             color:#020204;
             margin:0;
             padding:0;
@@ -151,7 +151,7 @@ function linkmarklet_post()
             display:block;
             width:100%;
             padding-left:110px;
-            font-size:12px;
+            font-size:13px;
             border:0;
             -webkit-appearance:none;
         }
@@ -169,7 +169,7 @@ function linkmarklet_post()
             width:100%;
             min-height:200px;
             height:100%;
-            font-size:12px;
+            font-size:13px;
             border:0;
             -webkit-appearance:none;
             resize:none;
@@ -200,11 +200,20 @@ function linkmarklet_post()
     {
         check_admin_referer( 'linkmarklet-press-this' );
         $posted = $post_ID = linkmarklet_post();
-        // print_r($_POST);
+
+        if( isset( $_POST['publish'] ) )
+        {
+            $message = '<p>Entry posted. <a onclick="window.opener.location.replace(this.href); window.close();" href="' . get_permalink( $posted ) . '">View post</a></p>';
+        }
+        else
+        {
+            $message = '<p>Draft saved. <a onclick="window.close();" href="#">Dismiss</a></p>';
+        }
+
         ?>
 
         <div class="message">
-            <p>Entry posted. <a onclick="window.opener.location.replace(this.href); window.close();" href="<?php echo get_permalink( $posted ); ?>">View post</a></p>
+            <?php echo $message; ?>
         </div>
 
 <?php } else { ?>

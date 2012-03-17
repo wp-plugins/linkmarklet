@@ -24,6 +24,10 @@ That's about it. Clicking Post pushes the entry live instantly. More features fo
 
 == Changelog ==
 
+= 0.2.1 =
+* Corrected messaging when a Draft is saved
+* Boosted the font size a bit
+
 = 0.2 =
 * Better handling of text input fields on mobile devices
 * Option to auto-generate the slug (or not)
