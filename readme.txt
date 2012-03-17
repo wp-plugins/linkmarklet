@@ -4,7 +4,7 @@ Donate link:http://mondaybynoon.com/donate/
 Tags: link, linkblog, press this
 Requires at least: 3.3
 Tested up to: 3.3.1
-Stable tag: 0.1
+Stable tag: 0.2
 
 Linkmarklet is an alternative to the Press This! bookmarklet aimed at rapid link blogging
 
@@ -23,6 +23,11 @@ That's about it. Clicking Post pushes the entry live instantly. More features fo
 1. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Changelog ==
+
+= 0.2 =
+* Better handling of text input fields on mobile devices
+* Option to auto-generate the slug (or not)
+* Added 'Save' button to save as a Draft instead of Publish straight away
 
 = 0.1 =
 * Initial release
