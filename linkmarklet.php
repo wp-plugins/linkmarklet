@@ -2,19 +2,19 @@
 /*
 Plugin Name: Linkmarklet
 Plugin URI: http://wordpress.org/extend/plugins/linkmarklet/
-Description: Alternate to Press This!
+Description: Alternate to Press This! specifically geared to linkblogging. Quickly post while saving a link to a Custom Field.
 Author: Jonathan Christopher
-Version: 0.2.1
+Version: 0.4
 Author URI: http://mondaybynoon.com/
 */
 
 if( !defined( 'IS_ADMIN' ) )
     define( 'IS_ADMIN', is_admin() );
 
-define( 'LINKMARKLET_VERSION', '0.2.1' );
-define( 'LINKMARKLET_PREFIX', '_iti_linkmarklet_' );
-define( 'LINKMARKLET_DIR', WP_PLUGIN_DIR . '/' . basename( dirname( __FILE__ ) ) );
-define( 'LINKMARKLET_URL', rtrim( plugin_dir_url( __FILE__ ), '/' ) );
+define( 'LINKMARKLET_VERSION',  '0.4' );
+define( 'LINKMARKLET_PREFIX',   '_iti_linkmarklet_' );
+define( 'LINKMARKLET_DIR',      WP_PLUGIN_DIR . '/' . basename( dirname( __FILE__ ) ) );
+define( 'LINKMARKLET_URL',      rtrim( plugin_dir_url( __FILE__ ), '/' ) );
 
 add_action( 'admin_menu', array( 'Linkmarklet', 'assets' ) );
 add_action( 'admin_init', array( 'Linkmarklet', 'register_settings' ) );
@@ -51,9 +51,25 @@ class Linkmarklet
         );
 
         add_settings_field(
+            LINKMARKLET_PREFIX . 'post_format',
+            'Post Format',
+            array( 'Linkmarklet', 'edit_post_format' ),
+            LINKMARKLET_PREFIX . 'options',
+            LINKMARKLET_PREFIX . 'options'
+        );
+
+        add_settings_field(
             LINKMARKLET_PREFIX . 'custom_field',
             'Link Custom Field',
             array( 'Linkmarklet', 'edit_custom_field' ),
+            LINKMARKLET_PREFIX . 'options',
+            LINKMARKLET_PREFIX . 'options'
+        );
+
+        add_settings_field(
+            LINKMARKLET_PREFIX . 'future_publish',
+            'Future Publish',
+            array( 'Linkmarklet', 'edit_future_publish' ),
             LINKMARKLET_PREFIX . 'options',
             LINKMARKLET_PREFIX . 'options'
         );
@@ -67,12 +83,31 @@ class Linkmarklet
         );
 
         add_settings_field(
+            LINKMARKLET_PREFIX . 'support_tags',
+            'Support Tags',
+            array( 'Linkmarklet', 'edit_support_tags' ),
+            LINKMARKLET_PREFIX . 'options',
+            LINKMARKLET_PREFIX . 'options'
+        );
+
+        add_settings_field(
             LINKMARKLET_PREFIX . 'bookmarklet',
             'Bookmarklet',
             array( 'Linkmarklet', 'edit_bookmarklet' ),
             LINKMARKLET_PREFIX . 'options',
             LINKMARKLET_PREFIX . 'options'
         );
+
+        if( is_plugin_active( 'markdown-on-save/markdown-on-save.php' ) )
+        {
+            add_settings_field(
+                LINKMARKLET_PREFIX . 'markdown',
+                'Markdown on Save',
+                array( 'Linkmarklet', 'edit_markdown' ),
+                LINKMARKLET_PREFIX . 'options',
+                LINKMARKLET_PREFIX . 'options'
+            );
+        }
     }
 
     function validate_settings( $input )
@@ -97,7 +132,7 @@ class Linkmarklet
     function edit_category()
     {
         $settings   = get_option( LINKMARKLET_PREFIX . 'settings' );
-        $categories = get_categories( 'hide_empty=0');
+        $categories = get_categories( 'hide_empty=0' );
         ?>
         <select name="<?php echo LINKMARKLET_PREFIX; ?>settings[category]">
             <option value="0">- No Category -</option>
@@ -106,6 +141,28 @@ class Linkmarklet
             <?php endforeach; ?>
         </select>
         <?
+    }
+
+    function edit_post_format()
+    {
+        if( !current_theme_supports( 'post-formats' ) )
+        {
+            echo 'Your active theme does not support Post Formats.';
+            return;
+        }
+
+        $settings       = get_option( LINKMARKLET_PREFIX . 'settings' );
+        $post_formats   = get_theme_support( 'post-formats' );
+        ?>
+            <select name="<?php echo LINKMARKLET_PREFIX; ?>settings[post_format]">
+                <?php if ( is_array( $post_formats[0] ) ) : ?>
+                    <option value="0">Standard</option>
+                    <?php foreach( $post_formats[0] as $post_format ) : ?>
+                        <option value="<?php echo esc_attr( $post_format ); ?>"<?php if( isset( $settings['post_format'] ) && $settings['post_format'] == $post_format ) : ?> selected="selected"<?php endif; ?>><?php echo ucfirst( $post_format ); ?></option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        <?php
     }
 
     function edit_custom_field()
@@ -117,12 +174,43 @@ class Linkmarklet
         <?
     }
 
+    function edit_future_publish()
+    {
+        $settings       = get_option( LINKMARKLET_PREFIX . 'settings' );
+        $timeframe_min  = isset( $settings['future_publish']['min'] ) ? intval( $settings['future_publish']['min'] ) : '';
+        $timeframe_max  = isset( $settings['future_publish']['max'] ) ? intval( $settings['future_publish']['max'] ) : '';
+        $bumper         = isset( $settings['future_publish']['bumper'] ) ? intval( $settings['future_publish']['bumper'] ) : '';
+        $publish_start  = isset( $settings['future_publish']['start'] ) ? intval( $settings['future_publish']['start'] ) : '';
+        $publish_end    = isset( $settings['future_publish']['end'] ) ? intval( $settings['future_publish']['end'] ) : '';
+        ?>
+            Delay publishing by using a range of <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[future_publish][min]" type="text" id="linkmarklet_future_publish_min" value="<?php echo $timeframe_min; ?>" class="small-text" /> to <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[future_publish][max]" type="text" id="linkmarklet_future_publish_max" value="<?php echo $timeframe_max; ?>" class="small-text" /> minutes. I would also like to publish only between the hours of <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[future_publish][start]" type="text" id="linkmarklet_future_publish_start" value="<?php echo $publish_start; ?>" class="small-text" /> and <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[future_publish][end]" type="text" id="linkmarklet_future_publish_end" value="<?php echo $publish_end; ?>" class="small-text" /><br /><span class="description">Leave empty to disable. 24 hour clock.</span>
+        <?
+    }
+
     function edit_prepopulate_slug()
     {
         $settings           = get_option( LINKMARKLET_PREFIX . 'settings' );
-        $prepopulate_slug   = isset( $settings['prepopulate_slug'] ) ? $settings['prepopulate_slug'] : '';
+        $prepopulate_slug   = isset( $settings['prepopulate_slug'] ) ? true : false;
         ?>
             <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[prepopulate_slug]" type="checkbox" id="linkmarklet_prepopulate_slug" value="1" <?php if( $prepopulate_slug ) : ?>checked="checked"<?php endif; ?>/> <span class="description">Auto-generate a slug</span>
+        <?
+    }
+
+    function edit_support_tags()
+    {
+        $settings       = get_option( LINKMARKLET_PREFIX . 'settings' );
+        $support_tags   = isset( $settings['support_tags'] ) ? true : false;
+        ?>
+            <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[support_tags]" type="checkbox" id="linkmarklet_support_tags" value="1" <?php if( $support_tags ) : ?>checked="checked"<?php endif; ?>/> <span class="description">Include a field for tags</span>
+        <?
+    }
+
+    function edit_markdown()
+    {
+        $settings   = get_option( LINKMARKLET_PREFIX . 'settings' );
+        $markdown   = isset( $settings['markdown'] ) ? true : false;
+        ?>
+            <input name="<?php echo LINKMARKLET_PREFIX; ?>settings[markdown]" type="checkbox" id="linkmarklet_markdown" value="1" <?php if( $markdown ) : ?>checked="checked"<?php endif; ?>/> <span class="description">Use Markdown on Save when publishing</span>
         <?
     }
 
